@@ -1,0 +1,35 @@
+{
+  "nombre": "Winderson Castrillo",
+  "rol": "Desarrollador web",
+  "lugar": "Chile",
+  "lema": "Aplicaciones internas con Laravel: roles y permisos, código tipado y entregas revisadas.",
+  "experiencia": [
+    {
+      "proyecto": "Intranet MinCiencia v3",
+      "organizacion": "Ministerio de Ciencia, Tecnología, Conocimiento e Innovación",
+      "resumen": "Nueva versión de la intranet del ministerio.",
+      "detalles": [
+        ["Base", "Laravel 13 y PHP 8.3, con Blade, Tailwind CSS 4 y Vite"],
+        ["Acceso", "Roles y permisos con spatie/laravel-permission, login OAuth con Socialite"],
+        ["Calidad", "Análisis estático con Larastan, estilo con Pint, pruebas con PHPUnit"],
+        ["Entrega", "Docker con Sail, GitLab CI y flujo issue, rama y merge request"]
+      ],
+      "nota": "El código es del ministerio, por eso el repositorio no es público."
+    }
+  ],
+  "en_desarrollo": [
+    {
+      "proyecto": "ASTERAE",
+      "estado": "En diseño",
+      "resumen": "Tienda online de una prenda, pensada primero para celular. Envíos a EE. UU., sitio bilingüe.",
+      "stack": ["Django", "Django Admin", "Stripe", "PayPal"]
+    }
+  ],
+  "stack": [
+    ["Backend", ["PHP 8.3", "Laravel 13", "Python", "Django"]],
+    ["Frontend", ["Blade", "Tailwind CSS", "Vite"]],
+    ["Datos", ["MySQL"]],
+    ["Calidad", ["PHPUnit", "Larastan", "Pint"]],
+    ["Entrega", ["Docker", "Sail", "Git", "GitLab CI", "GitHub"]]
+  ]
+}
