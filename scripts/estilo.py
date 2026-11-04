@@ -15,6 +15,11 @@ COLOR = {
     "acento_fondo": "#241D30", # fondo teñido de morado para chips y la píldora de estado
 }
 
+# Tonos del retrato, de sombra a luz. El más oscuro es morado y no negro,
+# para que el pelo no se pierda contra el fondo de la tarjeta.
+RETRATO = ["#33283F", "#4E3C6E", "#6E539C", "#9174C2", "#B794E0", "#DCCBF1"]
+RETRATO_ESCALA = 3  # cada píxel del retrato mide 3x3 en la tarjeta
+
 # Pares que deben cumplir WCAG AA (4.5:1). El generador los revisa antes de dibujar.
 PARES_CONTRASTE = [
     ("texto", "fondo"), ("texto", "superficie"),

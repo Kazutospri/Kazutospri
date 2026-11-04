@@ -9,7 +9,8 @@ import sys
 from html import escape
 from pathlib import Path
 
-from estilo import ANCHO, ANCHO_MONO, COLOR, MARGEN, MONO, PARES_CONTRASTE, RADIO, SANS, TAM
+from estilo import (ANCHO, ANCHO_MONO, COLOR, MARGEN, MONO, PARES_CONTRASTE, RADIO, RETRATO,
+                    RETRATO_ESCALA, SANS, TAM)
 
 RAIZ = Path(__file__).resolve().parent.parent
 ASSETS = RAIZ / "assets"
@@ -119,7 +120,7 @@ def tarjeta(alto, cuerpo, titulo, descripcion):
 
 # ---------- Tarjetas ----------
 
-def espadas(cx, cy):
+def espadas(cx, cy, escala=1.0):
     """Dos espadas cruzadas en línea fina: guiño a Kirito, decorativo y discreto."""
     partes = []
     for direccion, color, opacidad in ((1, "acento", 1), (-1, "texto_suave", 0.6)):
@@ -136,17 +137,75 @@ def espadas(cx, cy):
             f'y2="{guarda[1] + 11 * d}" stroke-width="2"/>'
             f'<line x1="{guarda[0]}" y1="{guarda[1]}" x2="{pomo[0]}" y2="{pomo[1]}" stroke-width="4"/>'
             f'<circle cx="{pomo[0]}" cy="{pomo[1]}" r="2.5" fill="{COLOR[color]}" fill-opacity="{opacidad}"/></g>')
-    return f'<g aria-hidden="true">{"".join(partes)}</g>'
+    zoom = f'translate({cx} {cy}) scale({escala}) translate({-cx} {-cy})'
+    return f'<g aria-hidden="true" transform="{zoom}">{"".join(partes)}</g>'
+
+
+def leer_pam(ruta):
+    """Lee un PAM RGB_ALPHA (formato simple de imagen) sin librerías externas."""
+    datos = ruta.read_bytes()
+    cabecera, pixeles = datos.split(b"ENDHDR\n", 1)
+    campos = dict(linea.split(" ", 1) for linea in cabecera.decode().splitlines()[1:] if " " in linea)
+    ancho, alto = int(campos["WIDTH"]), int(campos["HEIGHT"])
+    if campos.get("TUPLTYPE") != "RGB_ALPHA":
+        sys.exit(f"{ruta} debe ser RGB_ALPHA; vuelve a correr scripts/preparar_retrato.sh")
+    filas = []
+    for y in range(alto):
+        fila = []
+        for x in range(ancho):
+            r, g, b, a = pixeles[(y * ancho + x) * 4:(y * ancho + x) * 4 + 4]
+            fila.append(None if a < 128 else 0.2126 * r + 0.7152 * g + 0.0722 * b)
+        filas.append(fila)
+    return filas
+
+
+def retrato(ruta, x0, y0):
+    """Dibuja el retrato en duotono: cada luminosidad se lleva a uno de los tonos de RETRATO."""
+    filas = leer_pam(ruta)
+    visibles = sorted(v for fila in filas for v in fila if v is not None)
+    # Se estira entre los percentiles 3 y 90: la polera blanca se satura al tono más claro
+    # y así la cara aprovecha toda la escala (si no, los rasgos se pierden en dos tonos).
+    bajo, alto = visibles[len(visibles) * 3 // 100], visibles[len(visibles) * 90 // 100]
+    niveles = len(RETRATO)
+    s = RETRATO_ESCALA
+    partes = []
+    for y, fila in enumerate(filas):
+        x = 0
+        while x < len(fila):
+            if fila[x] is None:
+                x += 1
+                continue
+            t = min(1.0, max(0.0, (fila[x] - bajo) / max(1.0, alto - bajo)))
+            nivel = min(niveles - 1, int(t * niveles))
+            # Junta píxeles seguidos del mismo tono en un solo rectángulo: el SVG pesa mucho menos.
+            fin = x + 1
+            while fin < len(fila) and fila[fin] is not None and min(niveles - 1, int(min(1.0, max(0.0, (fila[fin] - bajo) / max(1.0, alto - bajo))) * niveles)) == nivel:
+                fin += 1
+            partes.append(f'<rect x="{x0 + x * s}" y="{y0 + y * s}" width="{(fin - x) * s}" height="{s}" fill="{RETRATO[nivel]}"/>')
+            x = fin
+    ancho = len(filas[0]) * s
+    return f'<g aria-hidden="true" shape-rendering="crispEdges">{"".join(partes)}</g>', ancho
 
 
 def tarjeta_encabezado(p):
-    alto = 176
-    ancho_texto = ANCHO - 2 * MARGEN - 140
-    cuerpo = [etiqueta(MARGEN, 52, f'{p["rol"]} · {p["lugar"]}', "acento"),
-              texto(MARGEN, 98, p["nombre"], TAM["titulo"], "texto", 700, espaciado=-0.6)]
+    ruta_retrato = RAIZ / "data" / "retrato.pam"
+    if ruta_retrato.exists():
+        # Con retrato: foto a la izquierda, texto alineado con la columna de valores de las otras tarjetas.
+        alto, y_retrato = 192, 24
+        svg_retrato, ancho_retrato = retrato(ruta_retrato, MARGEN, y_retrato)
+        x_texto, y_base, cuerpo = MARGEN + ancho_retrato + 28, 64, [svg_retrato]
+        espadas_svg = espadas(ANCHO - MARGEN - 44, alto / 2, 0.7)
+        ancho_texto = ANCHO - x_texto - MARGEN - 100
+    else:
+        # Sin retrato: el encabezado de siempre, para que el script no falle si no hay foto.
+        alto, x_texto, y_base, cuerpo = 176, MARGEN, 52, []
+        espadas_svg = espadas(ANCHO - MARGEN - 64, alto / 2)
+        ancho_texto = ANCHO - 2 * MARGEN - 140
+    cuerpo += [etiqueta(x_texto, y_base, f'{p["rol"]} · {p["lugar"]}', "acento"),
+               texto(x_texto, y_base + 46, p["nombre"], TAM["titulo"], "texto", 700, espaciado=-0.6)]
     for i, linea in enumerate(partir(p["lema"], TAM["cuerpo"], ancho_texto)):
-        cuerpo.append(texto(MARGEN, 132 + i * 22, linea, TAM["cuerpo"], "texto_suave"))
-    cuerpo.append(espadas(ANCHO - MARGEN - 64, alto / 2))
+        cuerpo.append(texto(x_texto, y_base + 80 + i * 22, linea, TAM["cuerpo"], "texto_suave"))
+    cuerpo.append(espadas_svg)
     return tarjeta(alto, "".join(cuerpo), p["nombre"], f'{p["rol"]} en {p["lugar"]}. {p["lema"]}')
 
 
