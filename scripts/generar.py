@@ -4,6 +4,7 @@ Uso: python3 scripts/generar.py
 Solo usa la biblioteca estándar de Python, para que corra en cualquier equipo sin instalar nada.
 """
 
+import hashlib
 import json
 import sys
 from html import escape
@@ -260,7 +261,9 @@ def tarjeta_stack(stack):
 # ---------- README ----------
 
 def img(archivo, alt):
-    return f'<img src="assets/{archivo}" width="100%" alt="{escape(alt)}">'
+    # La marca ?v= cambia cuando cambia el dibujo: así el navegador no sigue mostrando la imagen vieja guardada.
+    version = hashlib.sha1((ASSETS / archivo).read_bytes()).hexdigest()[:8]
+    return f'<img src="assets/{archivo}?v={version}" width="100%" alt="{escape(alt)}">'
 
 
 def readme(p, archivos):
