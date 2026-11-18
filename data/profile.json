@@ -3,12 +3,25 @@
   "name": "Winderson Castrillo",
   "role": "Desarrollador web · Chile",
   "bio": "Aplicaciones internas con Laravel: roles y permisos, código tipado y entregas revisadas. Estudio en INACAP y trabajo desde Linux con Docker y GitLab CI.",
-  "pills": ["Laravel", "PHP 8.3", "Django", "Docker", "CachyOS", "INACAP"],
+  "pills": [
+    "Laravel",
+    "PHP 8.3",
+    "Django",
+    "Docker",
+    "CachyOS",
+    "INACAP"
+  ],
   "theme": "terminal",
-  "accent": "cachyos",
+  "accent": "kirito",
+  "force_dark": true,
   "host": "cachyos",
   "lang": "es",
-  "tiles": ["repos", "contributions", "prs", "production"],
+  "tiles": [
+    "repos",
+    "contributions",
+    "prs",
+    "production"
+  ],
   "portrait": "data/portrait.png",
   "portrait_width": 260,
   "projects": [
@@ -17,7 +30,12 @@
       "title": "AniSync Toshokan",
       "label": "WEB · API REST",
       "desc": "Galería de animes con búsqueda en la API Jikan, temporada actual, horarios por día y una «Bóveda» para guardar favoritos.",
-      "stack": ["HTML", "CSS", "JavaScript", "Jikan API"],
+      "stack": [
+        "HTML",
+        "CSS",
+        "JavaScript",
+        "Jikan API"
+      ],
       "status": "Proyecto educativo",
       "kind": "proto"
     },
@@ -26,7 +44,12 @@
       "title": "Riego IoT con Arduino",
       "label": "IOT · ARDUINO",
       "desc": "Riego por humedad de suelo: un sensor YL-69 activa una bomba por relé y un segundo Arduino recibe los datos por Bluetooth HC-05.",
-      "stack": ["Arduino", "C++", "HC-05", "YL-69"],
+      "stack": [
+        "Arduino",
+        "C++",
+        "HC-05",
+        "YL-69"
+      ],
       "status": "INACAP · EVA1",
       "kind": "proto"
     },
@@ -35,7 +58,12 @@
       "title": "Evalora",
       "label": "LANDING · PWA",
       "desc": "Conecta empresas con profesionales de 60 a 65 años y más mediante microproyectos remunerados, para reducir el sesgo por edad al contratar.",
-      "stack": ["HTML", "CSS", "JavaScript", "PWA"],
+      "stack": [
+        "HTML",
+        "CSS",
+        "JavaScript",
+        "PWA"
+      ],
       "status": "Prototipo",
       "kind": "proto"
     },
@@ -44,17 +72,57 @@
       "title": "TalentoActivo",
       "label": "PROTOTIPO · WEB",
       "desc": "Plataforma que conecta talento senior con empresas: acceso por perfil, tareas, panel de empresa y una guía de bienvenida.",
-      "stack": ["HTML", "CSS", "JavaScript"],
+      "stack": [
+        "HTML",
+        "CSS",
+        "JavaScript"
+      ],
       "status": "Prototipo v2",
       "kind": "proto"
     }
   ],
   "toolkit": [
-    { "label": "Backend", "items": ["PHP 8.3", "Laravel 13", "Python", "Django"] },
-    { "label": "Frontend", "items": ["Blade", "Tailwind CSS", "Vite"] },
-    { "label": "Datos", "items": ["MySQL"] },
-    { "label": "Calidad", "items": ["PHPUnit", "Larastan", "Pint"] },
-    { "label": "Entrega", "items": ["Docker", "Sail", "Git", "GitLab CI", "GitHub"] }
+    {
+      "label": "Backend",
+      "items": [
+        "PHP 8.3",
+        "Laravel 13",
+        "Python",
+        "Django"
+      ]
+    },
+    {
+      "label": "Frontend",
+      "items": [
+        "Blade",
+        "Tailwind CSS",
+        "Vite"
+      ]
+    },
+    {
+      "label": "Datos",
+      "items": [
+        "MySQL"
+      ]
+    },
+    {
+      "label": "Calidad",
+      "items": [
+        "PHPUnit",
+        "Larastan",
+        "Pint"
+      ]
+    },
+    {
+      "label": "Entrega",
+      "items": [
+        "Docker",
+        "Sail",
+        "Git",
+        "GitLab CI",
+        "GitHub"
+      ]
+    }
   ],
   "extra_sections": [
     {
