@@ -12,7 +12,7 @@
     "INACAP"
   ],
   "theme": "terminal",
-  "accent": "kirito",
+  "accent": "plata",
   "force_dark": true,
   "host": "cachyos",
   "lang": "es",
@@ -22,8 +22,7 @@
     "prs",
     "production"
   ],
-  "portrait": "data/portrait-sheet.png",
-  "portrait_frames": "data/portrait-sheet.json",
+  "portrait": "data/portrait.png",
   "portrait_width": 250,
   "projects": [
     {
@@ -135,7 +134,5 @@
       "html": "<b>ASTERAE</b> · en diseño<br>Tienda online de una prenda, pensada primero para celular. Envíos a EE. UU., sitio bilingüe. Django, Django Admin, Stripe y PayPal."
     }
   ],
-  "credits": [
-    "Personaje original en pixel art, generado con PixelLab."
-  ]
+  "credits": []
 }

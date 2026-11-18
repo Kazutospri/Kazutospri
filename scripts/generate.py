@@ -13,6 +13,7 @@ Writes assets/*.svg, README.md (unless "readme": false) and preview.html (local 
 import argparse
 import base64
 import datetime as dt
+import hashlib
 import html
 import json
 import math
@@ -100,6 +101,8 @@ ACCENTS = {  # (light, dark)
     "ide": ("#3574f0", "#548af7"), "notebook": ("#d4561c", "#f0883e"),
     # Paleta propia: negro y morado neón. En terminal suma KIRITO_STYLE (fondos más negros y brillo)
     "kirito": ("#7c3aed", "#c084fc"),
+    # Paleta propia: negro, gris carbón y plata, sin morado. En terminal suma PLATA_STYLE
+    "plata": ("#4b5563", "#d4d8de"),
 }
 DISTRO_HOSTS = {"ubuntu": "ubuntu", "arch": "archlinux", "debian": "debian", "fedora": "fedora",
                 "mint": "linuxmint", "cachyos": "cachyos"}
@@ -348,11 +351,43 @@ KIRITO_STYLE = """<style>
 </defs>"""
 
 
+# Capa extra del acento plata: interfaz de juego en negro y plata. Paneles negros con borde
+# plateado fino y un brillo blanco tenue, como un HUD; los colores de los datos van en grises
+# y blancos para no romper la paleta de dos tonos.
+PLATA_STYLE = """<style>
+@media (prefers-color-scheme:dark){
+.frame{fill:#060607;stroke:#8b9098;filter:url(#halo)}.bar{fill:#121315}
+.tile{fill:#0d0e10;stroke:#3a3d42}
+.chip{fill:#101113;stroke:#6b7078}
+.track{fill:#1c1d20}.trk{stroke:#1c1d20}
+.t1{fill:#f2f3f5}.t2{fill:#9aa0a8}
+.c-blue{fill:#e5e7eb}.c-cyan{fill:#c0c4ca}.c-purple{fill:#9ca3af}.c-green{fill:#ffffff}
+.sep{stroke:#2a2c30}
+.k1{fill:#e5e7eb}.k2{fill:#9aa0a8}.k3{fill:#5b6068}
+.d-prod{fill:#ffffff}.d-proto{fill:#8b9098}
+.h0{fill:#16171a}
+.ac[font-weight="800"]{filter:url(#neon)}}
+</style><defs>
+<filter id="neon" x="-10%" y="-40%" width="120%" height="180%"><feGaussianBlur stdDeviation="2.5" result="b"/>
+<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<filter id="halo" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+<feComponentTransfer><feFuncA type="linear" slope=".35"/></feComponentTransfer>
+<feComposite operator="out" in2="SourceAlpha" result="g"/><feFlood flood-color="#e5e7eb"/>
+<feComposite operator="in" in2="g"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>"""
+
+# Grises del acento plata para lenguajes, de más a menos usado
+PLATA_GRAYS = ("#ffffff", "#d4d8de", "#a3a9b1", "#7a8088", "#565a61")
+
+# Capas extra por acento en el tema terminal
+ACCENT_STYLES = {"kirito": KIRITO_STYLE, "plata": PLATA_STYLE}
+
+
 def style():
     light, dark = ACCENTS.get(ACCENT, ACCENTS["cyan"])
     css = STYLES[THEME]
-    if ACCENT == "kirito" and THEME == "terminal":
-        css += KIRITO_STYLE
+    if THEME == "terminal" and ACCENT in ACCENT_STYLES:
+        css += ACCENT_STYLES[ACCENT]
     css = css.replace("@AL@", light).replace("@AD@", dark).replace("@P@", phosphor())
     if FORCE_DARK:
         # @media all siempre se cumple: las reglas oscuras aplican en cualquier tema del visitante
@@ -391,6 +426,13 @@ def lang_color(name):
         return (HANDHELD[0], HANDHELD[1], "#5f7f12")[LANG_RANK.get(name, len(name)) % 3]
     if THEME == "crt":
         return phosphor()
+    if ACCENT == "plata":
+        # Escala de grises por ranking: el lenguaje más usado va en blanco, el resto se apaga.
+        # Desde el último gris se alternan los dos más oscuros, para que dos lenguajes de bajo
+        # ranking seguidos en una barra no se fundan en un solo segmento.
+        rank = LANG_RANK.get(name, len(PLATA_GRAYS))
+        last = len(PLATA_GRAYS) - 1
+        return PLATA_GRAYS[rank] if rank < last else PLATA_GRAYS[last - (rank - last) % 2]
     return LANG_COLORS.get(name, "#8b949e")
 
 
@@ -824,7 +866,27 @@ def lang_segments(langs, ignore):
     return [(k, v / total) for k, v in sorted(langs.items(), key=lambda kv: -kv[1])]
 
 
-def build_header(cfg, handle):
+def draw_hud(cfg, x, y, contributions):
+    """Nivel y barra de HP estilo RPG para el acento plata.
+
+    El HP son las contribuciones del año sobre una meta (hud.meta, 100 por defecto), así la barra
+    se llena con el trabajo real. El nivel sube uno cada 5 contribuciones salvo que hud.nivel lo fije.
+    """
+    hud = cfg.get("hud", {})
+    meta = max(int(hud.get("meta", 100)), 1)  # evita dividir por cero si alguien pone 0
+    nivel = int(hud.get("nivel", 1 + contributions // 5))
+    frac = min(contributions / meta, 1)
+    bar_x, bar_w = x + 96, 170
+    out = t(x, y, f"Lv.{nivel}", 13, "ac", "800", mono=True)
+    out += t(x + 64, y, "HP", 12, "t2", "700", mono=True)
+    out += f'<rect x="{bar_x}" y="{y - 10}" width="{bar_w}" height="9" rx="1.5" class="track"/>'
+    if frac > 0:
+        out += f'<rect x="{bar_x}" y="{y - 10}" width="{bar_w * frac:.1f}" height="9" rx="1.5" class="ac"/>'
+    out += t(bar_x + bar_w + 10, y, f"{contributions}/{meta}", 12, "t2", "700", mono=True)
+    return out
+
+
+def build_header(cfg, handle, contributions=0):
     """Text on the left; on the right an illustration (portrait) or a neofetch-style panel (fetch).
 
     A JPEG portrait fills the right side and fades into the window. A PNG or WebP keeps its
@@ -934,6 +996,8 @@ def build_header(cfg, handle):
             body += f'<rect x="{fx + i * 24}" y="{sy}" width="20" height="12" rx="2" class="{cls}"/>'
     if term():
         body += t(IX, top + 40, "$", 13, "ac", "700", mono=True) + t(IX + 16, top + 40, "whoami", 13, "t2", "700", mono=True)
+        if ACCENT == "plata":  # HUD de juego junto al prompt, sin quitarle alto al nombre
+            body += draw_hud(cfg, IX + 110, top + 40, contributions)
         # El cursor va como tspan pegado al nombre: un rect con ancho estimado tapaba la última
         # letra cuando la fuente real (DejaVu en Linux) es más ancha que la estimación
         name = t(IX, top + 86, cfg["name"], name_size, "ac", "800", mono=True)
@@ -1178,7 +1242,20 @@ def build_readme(cfg):
     for credit in cfg.get("credits", []):  # attribution for third-party art, always visible
         out += [f"<sub>{credit}</sub>", ""]
     out.append(f"<sub>{S['footer']}</sub>")
-    (ROOT / "README.md").write_text("\n".join(out) + "\n", encoding="utf-8")
+    texto = "\n".join(out) + "\n"
+
+    # GitHub guarda las imágenes en su caché (camo) por URL: si el SVG cambia pero la URL no,
+    # el perfil sigue mostrando la versión vieja. La huella del contenido cambia la URL solo
+    # cuando cambia el archivo.
+    def con_version(m):
+        ruta = ROOT / m.group(1)
+        if not ruta.exists():
+            return m.group(0)
+        huella = hashlib.sha256(ruta.read_bytes()).hexdigest()[:8]
+        return f'src="{m.group(1)}?v={huella}"'
+
+    texto = re.sub(r'src="(assets/[\w.-]+\.svg)"', con_version, texto)
+    (ROOT / "README.md").write_text(texto, encoding="utf-8")
 
 
 PREVIEW = """<!doctype html>
@@ -1229,7 +1306,8 @@ def main():
     if THEME not in THEMES:
         sys.exit(f"Unknown theme {THEME!r}; use one of: {', '.join(THEMES)}")
     ACCENT = cfg.get("accent") or DEFAULT_ACCENT.get(THEME, "cyan")  # classic and handheld ignore it
-    FORCE_DARK = bool(cfg.get("force_dark"))
+    # El acento plata es oscuro por diseño: sus grises y blancos no tienen contraste sobre fondo claro
+    FORCE_DARK = bool(cfg.get("force_dark")) or ACCENT == "plata"
     if ACCENT not in ACCENTS:
         sys.exit(f"Unknown accent {ACCENT!r}; use one of: {', '.join(ACCENTS)}")
     HOST = cfg.get("host") or DISTRO_HOSTS.get(ACCENT, "github")
@@ -1277,7 +1355,7 @@ def main():
     max_rows = max(l[2] for l in layouts.values())
     card_h = card_height(max_lines, max_rows)
 
-    files = {"header.svg": build_header(cfg, login)}
+    files = {"header.svg": build_header(cfg, login, contrib["contributionCalendar"]["totalContributions"])}
     for i, p in enumerate(cfg["projects"], 1):
         desc, chips, _ = layouts[p["repo"]]
         files[f"project-{i}.svg"] = build_project(p, infos[p["repo"]], (desc, chips, max_lines, max_rows, card_h))
