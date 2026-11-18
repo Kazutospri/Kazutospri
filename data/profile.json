@@ -24,7 +24,7 @@
   ],
   "portrait": "data/portrait-sheet.png",
   "portrait_frames": "data/portrait-sheet.json",
-  "portrait_width": 260,
+  "portrait_width": 250,
   "projects": [
     {
       "repo": "WindersonCastrillo/mi-galeria-web",
@@ -136,6 +136,6 @@
     }
   ],
   "credits": [
-    "Fan art de Kirito (<i>Sword Art Online</i>), generado con PixelLab."
+    "Personaje original en pixel art, generado con PixelLab."
   ]
 }
