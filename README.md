@@ -27,4 +27,6 @@
 
 <b>ASTERAE</b> · en diseño<br>Tienda online de una prenda, pensada primero para celular. Envíos a EE. UU., sitio bilingüe. Django, Django Admin, Stripe y PayPal.
 
+<sub>Fan art de Kirito (<i>Sword Art Online</i>), generado con PixelLab.</sub>
+
 <sub>Las tarjetas se generan con <a href="scripts/generate.py">scripts/generate.py</a> con datos de la API de GitHub.</sub>
