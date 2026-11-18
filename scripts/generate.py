@@ -13,6 +13,7 @@ Writes assets/*.svg, README.md (unless "readme": false) and preview.html (local 
 import argparse
 import base64
 import datetime as dt
+import hashlib
 import html
 import json
 import math
@@ -1178,7 +1179,20 @@ def build_readme(cfg):
     for credit in cfg.get("credits", []):  # attribution for third-party art, always visible
         out += [f"<sub>{credit}</sub>", ""]
     out.append(f"<sub>{S['footer']}</sub>")
-    (ROOT / "README.md").write_text("\n".join(out) + "\n", encoding="utf-8")
+    texto = "\n".join(out) + "\n"
+
+    # GitHub guarda las imágenes en su caché (camo) por URL: si el SVG cambia pero la URL no,
+    # el perfil sigue mostrando la versión vieja. La huella del contenido cambia la URL solo
+    # cuando cambia el archivo.
+    def con_version(m):
+        ruta = ROOT / m.group(1)
+        if not ruta.exists():
+            return m.group(0)
+        huella = hashlib.sha256(ruta.read_bytes()).hexdigest()[:8]
+        return f'src="{m.group(1)}?v={huella}"'
+
+    texto = re.sub(r'src="(assets/[\w.-]+\.svg)"', con_version, texto)
+    (ROOT / "README.md").write_text(texto, encoding="utf-8")
 
 
 PREVIEW = """<!doctype html>
