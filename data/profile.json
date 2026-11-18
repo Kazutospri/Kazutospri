@@ -22,7 +22,8 @@
     "prs",
     "production"
   ],
-  "portrait": "data/portrait.png",
+  "portrait": "data/portrait-sheet.png",
+  "portrait_frames": "data/portrait-sheet.json",
   "portrait_width": 260,
   "projects": [
     {
@@ -134,5 +135,7 @@
       "html": "<b>ASTERAE</b> · en diseño<br>Tienda online de una prenda, pensada primero para celular. Envíos a EE. UU., sitio bilingüe. Django, Django Admin, Stripe y PayPal."
     }
   ],
-  "credits": []
+  "credits": [
+    "Fan art de Kirito (<i>Sword Art Online</i>), generado con PixelLab."
+  ]
 }
