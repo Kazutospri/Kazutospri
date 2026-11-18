@@ -37,6 +37,7 @@ BAR = 28         # height of the title bar of windowed themes
 
 THEME = "terminal"  # set from profile.json; see THEMES
 ACCENT = "cyan"  # key of ACCENTS: a color, a Linux distribution or a system color
+FORCE_DARK = False  # true: los SVG usan siempre la paleta oscura, aunque quien mire use GitHub en claro
 S = {}           # interface strings for the chosen language
 
 LANG_COLORS = {
@@ -97,6 +98,8 @@ ACCENTS = {  # (light, dark)
     # System colors of the other themes
     "vscode": ("#007acc", "#3794ff"), "win": ("#005fb8", "#4cc2ff"), "mac": ("#007aff", "#0a84ff"),
     "ide": ("#3574f0", "#548af7"), "notebook": ("#d4561c", "#f0883e"),
+    # Paleta propia: negro y morado neón. En terminal suma KIRITO_STYLE (fondos más negros y brillo)
+    "kirito": ("#7c3aed", "#c084fc"),
 }
 DISTRO_HOSTS = {"ubuntu": "ubuntu", "arch": "archlinux", "debian": "debian", "fedora": "fedora",
                 "mint": "linuxmint", "cachyos": "cachyos"}
@@ -322,9 +325,39 @@ STYLES = {"terminal": TERMINAL_STYLE, "editor": EDITOR_STYLE, "classic": CLASSIC
           "win11": WIN11_STYLE, "macos": MACOS_STYLE, "ide": IDE_STYLE, "vim": VIM_STYLE,
           "notebook": NOTEBOOK_STYLE, "handheld": HANDHELD_STYLE, "crt": CRT_STYLE}
 
+# Capa extra del acento kirito en el tema terminal. Va después del estilo base para ganarle en
+# la cascada; solo toca la parte oscura, que es la que se fuerza con force_dark.
+KIRITO_STYLE = """<style>
+@media (prefers-color-scheme:dark){
+.frame{fill:#07070c;stroke:#4c2f7a;filter:url(#halo)}.bar{fill:#0e0b17}
+.tile{fill:#0c0a14;stroke:#2a1f42}
+.chip{fill:#110d1c;stroke:#2f2348}
+.track{fill:#1a1428}.trk{stroke:#1a1428}
+.t1{fill:#e6e3f2}.t2{fill:#8a84a3}
+.c-blue{fill:#7dd3fc}.c-cyan{fill:#a78bfa}.c-purple{fill:#c084fc}.c-green{fill:#f0abfc}
+.sep{stroke:#241b38}
+.h0{fill:#161122}
+.ac[font-weight="800"]{filter:url(#neon)}}
+</style><defs>
+<filter id="neon" x="-10%" y="-40%" width="120%" height="180%"><feGaussianBlur stdDeviation="3.5" result="b"/>
+<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<filter id="halo" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+<feComponentTransfer><feFuncA type="linear" slope=".45"/></feComponentTransfer>
+<feComposite operator="out" in2="SourceAlpha" result="g"/><feFlood flood-color="#a855f7"/>
+<feComposite operator="in" in2="g"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>"""
+
+
 def style():
     light, dark = ACCENTS.get(ACCENT, ACCENTS["cyan"])
-    return STYLES[THEME].replace("@AL@", light).replace("@AD@", dark).replace("@P@", phosphor())
+    css = STYLES[THEME]
+    if ACCENT == "kirito" and THEME == "terminal":
+        css += KIRITO_STYLE
+    css = css.replace("@AL@", light).replace("@AD@", dark).replace("@P@", phosphor())
+    if FORCE_DARK:
+        # @media all siempre se cumple: las reglas oscuras aplican en cualquier tema del visitante
+        css = css.replace("@media (prefers-color-scheme:dark){", "@media all{")
+    return css
 
 
 def phosphor():
@@ -901,9 +934,11 @@ def build_header(cfg, handle):
             body += f'<rect x="{fx + i * 24}" y="{sy}" width="20" height="12" rx="2" class="{cls}"/>'
     if term():
         body += t(IX, top + 40, "$", 13, "ac", "700", mono=True) + t(IX + 16, top + 40, "whoami", 13, "t2", "700", mono=True)
-        body += t(IX, top + 86, cfg["name"], name_size, "ac", "800", mono=True)
-        cursor_x = IX + text_width(cfg["name"], name_size, mono=True) * 0.92 + 8
-        body += f'<rect x="{cursor_x:.0f}" y="{top + 58}" width="16" height="32" class="ac" fill-opacity=".85"/>'
+        # El cursor va como tspan pegado al nombre: un rect con ancho estimado tapaba la última
+        # letra cuando la fuente real (DejaVu en Linux) es más ancha que la estimación
+        name = t(IX, top + 86, cfg["name"], name_size, "ac", "800", mono=True)
+        body += name[:-7] + ('<tspan fill-opacity=".85">█<animate attributeName="opacity" values="1;1;0;0" '
+                             'dur="1.1s" repeatCount="indefinite"/></tspan></text>')
         body += t(IX, top + 112, cfg["role"], 15, "t1", "600", mono=True)
     elif THEME == "editor":
         body += t(IX, top + 40, "// whoami", 13, "cm", mono=True)
@@ -1181,7 +1216,7 @@ def build_preview():
 # ───────────────────────── main ─────────────────────────
 
 def main():
-    global TOKEN, ROOT, ASSETS, THEME, ACCENT, S, OY, HOST
+    global TOKEN, ROOT, ASSETS, THEME, ACCENT, S, OY, HOST, FORCE_DARK
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--root", help="folder with data/profile.json (default: parent of scripts/)")
     args = parser.parse_args()
@@ -1194,6 +1229,7 @@ def main():
     if THEME not in THEMES:
         sys.exit(f"Unknown theme {THEME!r}; use one of: {', '.join(THEMES)}")
     ACCENT = cfg.get("accent") or DEFAULT_ACCENT.get(THEME, "cyan")  # classic and handheld ignore it
+    FORCE_DARK = bool(cfg.get("force_dark"))
     if ACCENT not in ACCENTS:
         sys.exit(f"Unknown accent {ACCENT!r}; use one of: {', '.join(ACCENTS)}")
     HOST = cfg.get("host") or DISTRO_HOSTS.get(ACCENT, "github")
